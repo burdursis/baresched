@@ -1,5 +1,7 @@
 # Bare-metal deadline-aware scheduler
 
+[![CI](https://github.com/burdursis/baresched/actions/workflows/ci.yml/badge.svg)](https://github.com/burdursis/baresched/actions/workflows/ci.yml)
+
 Current version: [0.1.0](VERSION).
 
 A small C++11 scheduler for systems that need periodic callbacks alongside short
@@ -133,6 +135,27 @@ make coverage
 Coverage produces [HTML details](build/coverage/reports/index.html) and
 [Cobertura XML](build/coverage/reports/coverage.xml) after the target runs.
 Normal builds have no coverage instrumentation.
+
+## CI
+
+The [GitHub Actions workflow](.github/workflows/ci.yml) runs on pushes and pull
+requests using Ubuntu 24.04. It configures a GCC Debug build with the existing
+warning flags and GoogleTest integration, checks valid/invalid template capacities,
+and builds the unit tests and example. Tests run through
+`ctest --test-dir build/ci --output-on-failure --no-tests=error`, so failures include
+their test output.
+
+Coverage uses the existing `SCHEDULER_ENABLE_COVERAGE` CMake option and GCC/gcov.
+After CTest, gcovr prints a summary and generates Cobertura XML plus detailed HTML.
+Only production code in `include/` contributes to percentages; tests, GoogleTest,
+third-party code, and generated build files are excluded. No coverage threshold
+is enforced.
+
+Download the `coverage-reports` artifact from the workflow run, extract it, and
+open `index.html`; `coverage.xml` is included in the same archive. Reports are
+retained for 14 days and are also generated after test failures when the build
+succeeded. A live coverage badge is omitted to avoid adding a separate publishing
+service or repository-write automation.
 
 ## Repository map
 

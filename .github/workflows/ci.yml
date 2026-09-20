@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test-coverage:
+    name: GCC Debug tests and coverage
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends \
+            build-essential cmake libgtest-dev gcovr
+
+      - name: Configure Debug build
+        run: |
+          cmake -S . -B build/ci \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_CXX_COMPILER=g++ \
+            -DBUILD_TESTING=ON \
+            -DSCHEDULER_BUILD_EXAMPLES=ON \
+            -DSCHEDULER_ENABLE_COVERAGE=ON \
+            -DSCHEDULER_GCOV_EXECUTABLE=gcov
+
+      - name: Build
+        id: build
+        run: cmake --build build/ci --parallel 2
+
+      - name: Run tests
+        run: |
+          # Discard counters from test discovery or a previous local run.
+          find build/ci -name '*.gcda' -delete
+          ctest --test-dir build/ci --output-on-failure --no-tests=error
+
+      - name: Generate coverage reports
+        id: coverage
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: |
+          mkdir -p build/ci/reports
+          # Only production headers contribute to coverage percentages.
+          gcovr --root . --filter 'include/.*' \
+            --gcov-executable gcov \
+            --exclude-unreachable-branches --exclude-throw-branches \
+            --print-summary \
+            --xml-pretty --xml build/ci/reports/coverage.xml \
+            --html-details build/ci/reports/index.html \
+            build/ci
+
+      - name: Upload coverage reports
+        if: ${{ !cancelled() && steps.coverage.outcome == 'success' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-reports
+          path: build/ci/reports/
+          if-no-files-found: error
+          retention-days: 14
