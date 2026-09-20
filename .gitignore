@@ -1,0 +1,16 @@
+# Generated builds and coverage reports
+/build/
+/build-*/
+/cmake-build-*/
+*.gcda
+*.gcno
+*.gcov
+
+# Local editor and agent state
+/.idea/
+/.vscode/
+/.agents/
+/.codex/
+*.swp
+*~
+.DS_Store
